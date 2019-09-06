@@ -1,0 +1,635 @@
+package com.test;
+
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Vector;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TempMigrate
+{
+    final static int INF = 987654321;
+    private final static Logger logger = LoggerFactory.getLogger(TempMigrate.class);
+    static int V;
+    static int[][] capacity, flow;
+    public static void mergeSort3Way(Integer[] gArray)
+    {
+        if (gArray == null)
+            return;
+
+        Integer[] fArray = new Integer[gArray.length];
+        // duplicate array
+        for (int i = 0; i < fArray.length; i++)
+            fArray[i] = gArray[i];
+
+        mergeSort3WayRec(fArray, 0, gArray.length, gArray);
+
+        for (int i = 0; i < fArray.length; i++)
+            gArray[i] = fArray[i];
+    }
+
+    public static void mergeSort3WayRec(Integer[] gArray,
+                                        int low, int high, Integer[] destArray)
+    {
+        if (high - low < 2)
+            return;
+
+        int mid1 = low + ((high - low) / 3);
+        int mid2 = low + 2 * ((high - low) / 3) + 1;
+
+        mergeSort3WayRec(destArray, low, mid1, gArray);
+        mergeSort3WayRec(destArray, mid1, mid2, gArray);
+        mergeSort3WayRec(destArray, mid2, high, gArray);
+        merge(destArray, low, mid1, mid2, high, gArray);
+    }
+
+    public static void merge(Integer[] gArray, int low,
+                             int mid1, int mid2, int high,
+                             Integer[] destArray)
+    {
+        int i = low, j = mid1, k = mid2, l = low;
+
+        while ((i < mid1) && (j < mid2) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+            {
+                if (gArray[i].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[i++];
+
+                else
+                    destArray[l++] = gArray[k++];
+            }
+            else
+            {
+                if (gArray[j].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[j++];
+                else
+                    destArray[l++] = gArray[k++];
+            }
+        }
+
+        while ((i < mid1) && (j < mid2))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[j++];
+        }
+
+        while ((j < mid2) && (k < high))
+        {
+            if (gArray[j].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[j++];
+
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while ((i < mid1) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while (i < mid1)
+            destArray[l++] = gArray[i++];
+
+        while (j < mid2)
+            destArray[l++] = gArray[j++];
+
+        while (k < high)
+            destArray[l++] = gArray[k++];
+    }
+    private static int networkFlow(int source, int sink) {
+        flow = new int[V][V];
+        int totalFlow = 0;
+        while (true) {
+            Vector<Integer> parent = new Vector<>(V);
+            for (int i = 0; i < V; i++)
+                parent.add(-1);
+            Queue<Integer> q = new LinkedList<>();
+            parent.set(source, source);
+            q.add(source);
+            while (!q.isEmpty() && parent.get(sink) == -1) {
+                int here = q.peek();
+                q.poll();
+                for (int there = 0; there < V; ++there)
+                    if (capacity[here][there] - flow[here][there] > 0 && parent.get(there) == -1) {
+                        q.add(there);
+                        parent.set(there, here);
+                    }
+            }
+            if (parent.get(sink) == -1)
+                break;
+
+            int amount = INF;
+            String printer = "path : ";
+            StringBuilder sb = new StringBuilder();
+            for (int p = sink; p != source; p = parent.get(p)) {
+                amount = Math.min(capacity[parent.get(p)][p] - flow[parent.get(p)][p], amount);
+                sb.append(p + "-");
+            }
+            sb.append(source);
+            for (int p = sink; p != source; p = parent.get(p)) {
+                flow[parent.get(p)][p] += amount;
+                flow[p][parent.get(p)] -= amount;
+            }
+            totalFlow += amount;
+            printer += sb.reverse() + " / max flow : " + totalFlow;
+            logger.debug("networkFlow printer: {}",printer);
+        }
+
+        return totalFlow;
+    }
+
+    public static int findSubsequence(int arr[], int n)
+    {
+
+        int len = 1;
+
+        int tmp;
+
+        int i, j, d;
+
+        int[][] dp = new int[n][10];
+
+        int[] cnt = new int[10];
+
+        int locMax;
+
+        tmp = arr[0];
+        while (tmp > 0)
+        {
+            dp[0][tmp % 10] = 1;
+            tmp /= 10;
+        }
+
+        for (i = 1; i < n; i++)
+        {
+            tmp = arr[i];
+            locMax = 1;
+            for (int x = 0; x < 10; x++)
+                cnt[x]=0;
+
+            while (tmp > 0)
+            {
+                cnt[tmp % 10] = 1;
+                tmp /= 10;
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = 1;
+                    for (j = 0; j < i; j++)
+                    {
+                        dp[i][d] = Math.max(dp[i][d], dp[j][d] + 1);
+                        locMax = Math.max(dp[i][d], locMax);
+                    }
+                }
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = locMax;
+                }
+            }
+            len = Math.max(len, locMax);
+        }
+
+        return len;
+    }
+
+
+
+
+
+
+
+    public static void mergeSort3Way2(Integer[] gArray)
+    {
+        if (gArray == null)
+            return;
+
+        Integer[] fArray = new Integer[gArray.length];
+        // duplicate array
+        for (int i = 0; i < fArray.length; i++)
+            fArray[i] = gArray[i];
+
+        mergeSort3WayRec2(fArray, 0, gArray.length, gArray);
+
+        for (int i = 0; i < fArray.length; i++)
+            gArray[i] = fArray[i];
+    }
+
+    public static void mergeSort3WayRec2(Integer[] gArray,
+                                         int low, int high, Integer[] destArray)
+    {
+        if (high - low < 2)
+            return;
+
+        int mid1 = low + ((high - low) / 3);
+        int mid2 = low + 2 * ((high - low) / 3) + 1;
+
+        mergeSort3WayRec2(destArray, low, mid1, gArray);
+        mergeSort3WayRec2(destArray, mid1, mid2, gArray);
+        mergeSort3WayRec2(destArray, mid2, high, gArray);
+        merge2(destArray, low, mid1, mid2, high, gArray);
+    }
+
+    public static void merge2(Integer[] gArray, int low,
+                              int mid1, int mid2, int high,
+                              Integer[] destArray)
+    {
+        int i = low, j = mid1, k = mid2, l = low;
+
+        while ((i < mid1) && (j < mid2) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+            {
+                if (gArray[i].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[i++];
+
+                else
+                    destArray[l++] = gArray[k++];
+            }
+            else
+            {
+                if (gArray[j].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[j++];
+                else
+                    destArray[l++] = gArray[k++];
+            }
+        }
+
+        while ((i < mid1) && (j < mid2))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[j++];
+        }
+
+        while ((j < mid2) && (k < high))
+        {
+            if (gArray[j].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[j++];
+
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while ((i < mid1) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while (i < mid1)
+            destArray[l++] = gArray[i++];
+
+        while (j < mid2)
+            destArray[l++] = gArray[j++];
+
+        while (k < high)
+            destArray[l++] = gArray[k++];
+    }
+    private static int networkFlow2(int source, int sink) {
+        flow = new int[V][V];
+        int totalFlow = 0;
+        while (true) {
+            Vector<Integer> parent = new Vector<>(V);
+            for (int i = 0; i < V; i++)
+                parent.add(-1);
+            Queue<Integer> q = new LinkedList<>();
+            parent.set(source, source);
+            q.add(source);
+            while (!q.isEmpty() && parent.get(sink) == -1) {
+                int here = q.peek();
+                q.poll();
+                for (int there = 0; there < V; ++there)
+                    if (capacity[here][there] - flow[here][there] > 0 && parent.get(there) == -1) {
+                        q.add(there);
+                        parent.set(there, here);
+                    }
+            }
+            if (parent.get(sink) == -1)
+                break;
+
+            int amount = INF;
+            String printer = "path : ";
+            StringBuilder sb = new StringBuilder();
+            for (int p = sink; p != source; p = parent.get(p)) {
+                amount = Math.min(capacity[parent.get(p)][p] - flow[parent.get(p)][p], amount);
+                sb.append(p + "-");
+            }
+            sb.append(source);
+            for (int p = sink; p != source; p = parent.get(p)) {
+                flow[parent.get(p)][p] += amount;
+                flow[p][parent.get(p)] -= amount;
+            }
+            totalFlow += amount;
+            printer += sb.reverse() + " / max flow : " + totalFlow;
+            logger.debug("printer: {}",printer);
+        }
+
+        return totalFlow;
+    }
+
+    public static int findSubsequence2(int arr[], int n)
+    {
+
+        int len = 1;
+
+        int tmp;
+
+        int i, j, d;
+
+        int[][] dp = new int[n][10];
+
+        int[] cnt = new int[10];
+
+        int locMax;
+
+        tmp = arr[0];
+        while (tmp > 0)
+        {
+            dp[0][tmp % 10] = 1;
+            tmp /= 10;
+        }
+
+        for (i = 1; i < n; i++)
+        {
+            tmp = arr[i];
+            locMax = 1;
+            for (int x = 0; x < 10; x++)
+                cnt[x]=0;
+
+            while (tmp > 0)
+            {
+                cnt[tmp % 10] = 1;
+                tmp /= 10;
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = 1;
+                    for (j = 0; j < i; j++)
+                    {
+                        dp[i][d] = Math.max(dp[i][d], dp[j][d] + 1);
+                        locMax = Math.max(dp[i][d], locMax);
+                    }
+                }
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = locMax;
+                }
+            }
+            len = Math.max(len, locMax);
+        }
+
+        return len;
+    }
+
+
+
+
+    public static void mergeSort3Way3(Integer[] gArray)
+    {
+        if (gArray == null)
+            return;
+
+        Integer[] fArray = new Integer[gArray.length];
+        // duplicate array
+        for (int i = 0; i < fArray.length; i++)
+            fArray[i] = gArray[i];
+
+        mergeSort3WayRec3(fArray, 0, gArray.length, gArray);
+
+        for (int i = 0; i < fArray.length; i++)
+            gArray[i] = fArray[i];
+    }
+
+    public static void mergeSort3WayRec3(Integer[] gArray,
+                                         int low, int high, Integer[] destArray)
+    {
+        if (high - low < 2)
+            return;
+
+        int mid1 = low + ((high - low) / 3);
+        int mid2 = low + 2 * ((high - low) / 3) + 1;
+
+        mergeSort3WayRec3(destArray, low, mid1, gArray);
+        mergeSort3WayRec3(destArray, mid1, mid2, gArray);
+        mergeSort3WayRec3(destArray, mid2, high, gArray);
+        merge3(destArray, low, mid1, mid2, high, gArray);
+    }
+
+    public static void merge3(Integer[] gArray, int low,
+                              int mid1, int mid2, int high,
+                              Integer[] destArray)
+    {
+        int i = low, j = mid1, k = mid2, l = low;
+
+        while ((i < mid1) && (j < mid2) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+            {
+                if (gArray[i].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[i++];
+
+                else
+                    destArray[l++] = gArray[k++];
+            }
+            else
+            {
+                if (gArray[j].compareTo(gArray[k]) < 0)
+                    destArray[l++] = gArray[j++];
+                else
+                    destArray[l++] = gArray[k++];
+            }
+        }
+
+        while ((i < mid1) && (j < mid2))
+        {
+            if (gArray[i].compareTo(gArray[j]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[j++];
+        }
+
+        while ((j < mid2) && (k < high))
+        {
+            if (gArray[j].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[j++];
+
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while ((i < mid1) && (k < high))
+        {
+            if (gArray[i].compareTo(gArray[k]) < 0)
+                destArray[l++] = gArray[i++];
+            else
+                destArray[l++] = gArray[k++];
+        }
+
+        while (i < mid1)
+            destArray[l++] = gArray[i++];
+
+        while (j < mid2)
+            destArray[l++] = gArray[j++];
+
+        while (k < high)
+            destArray[l++] = gArray[k++];
+    }
+    private static int networkFlow3(int source, int sink) {
+        flow = new int[V][V];
+        int totalFlow = 0;
+        while (true) {
+            Vector<Integer> parent = new Vector<>(V);
+            for (int i = 0; i < V; i++)
+                parent.add(-1);
+            Queue<Integer> q = new LinkedList<>();
+            parent.set(source, source);
+            q.add(source);
+            while (!q.isEmpty() && parent.get(sink) == -1) {
+                int here = q.peek();
+                q.poll();
+                for (int there = 0; there < V; ++there)
+                    if (capacity[here][there] - flow[here][there] > 0 && parent.get(there) == -1) {
+                        q.add(there);
+                        parent.set(there, here);
+                    }
+            }
+            if (parent.get(sink) == -1)
+                break;
+
+            int amount = INF;
+            String printer = "path : ";
+            StringBuilder sb = new StringBuilder();
+            for (int p = sink; p != source; p = parent.get(p)) {
+                amount = Math.min(capacity[parent.get(p)][p] - flow[parent.get(p)][p], amount);
+                sb.append(p + "-");
+            }
+            sb.append(source);
+            for (int p = sink; p != source; p = parent.get(p)) {
+                flow[parent.get(p)][p] += amount;
+                flow[p][parent.get(p)] -= amount;
+            }
+            totalFlow += amount;
+            printer += sb.reverse() + " / max flow : " + totalFlow;
+            logger.debug("printer: {}",printer);
+        }
+
+        return totalFlow;
+    }
+
+    public static int findSubsequence3(int arr[], int n)
+    {
+
+        int len = 1;
+
+        int tmp;
+
+        int i, j, d;
+
+        int[][] dp = new int[n][10];
+
+        int[] cnt = new int[10];
+
+        int locMax;
+
+        tmp = arr[0];
+        while (tmp > 0)
+        {
+            dp[0][tmp % 10] = 1;
+            tmp /= 10;
+        }
+
+        for (i = 1; i < n; i++)
+        {
+            tmp = arr[i];
+            locMax = 1;
+            for (int x = 0; x < 10; x++)
+                cnt[x]=0;
+
+            while (tmp > 0)
+            {
+                cnt[tmp % 10] = 1;
+                tmp /= 10;
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = 1;
+                    for (j = 0; j < i; j++)
+                    {
+                        dp[i][d] = Math.max(dp[i][d], dp[j][d] + 1);
+                        locMax = Math.max(dp[i][d], locMax);
+                    }
+                }
+            }
+
+            for (d = 0; d <= 9; d++)
+            {
+                if (cnt[d] > 0)
+                {
+                    dp[i][d] = locMax;
+                }
+            }
+            len = Math.max(len, locMax);
+        }
+
+        return len;
+    }
+
+    public static void test()
+    {
+        Integer[] data = new Integer[] {45, -2, -45, 78,
+                30, -42, 10, 19, 73, 93};
+        mergeSort3Way(data);
+        mergeSort3Way2(data);
+        mergeSort3Way3(data);
+
+        int arr[] = { 1, 12, 44, 29, 33, 96, 89 };
+        int n = arr.length;
+
+        System.out.println(findSubsequence(arr, n));
+        System.out.println(findSubsequence2(arr, n));
+        System.out.println(findSubsequence3(arr, n));
+        V = 6;
+        capacity = new int[V][V];
+        capacity[0][1] = 12;
+        capacity[0][3] = 13;
+        capacity[1][2] = 10;
+        capacity[2][3] = 13;
+        capacity[2][4] = 3;
+        capacity[2][5] = 15;
+        capacity[3][2] = 7;
+        capacity[3][4] = 15;
+        capacity[4][5] = 17;
+        System.out.println("Max capacity in networkFlow : " + networkFlow(0, 5));
+        System.out.println("Max capacity in networkFlow : " + networkFlow2(0, 5));
+        System.out.println("Max capacity in networkFlow : " + networkFlow3(0, 5));
+        for (int i = 0; i < data.length; i++)
+            System.out.print(data[i] + " ");
+    }
+}
